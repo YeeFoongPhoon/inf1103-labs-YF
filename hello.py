@@ -3,11 +3,15 @@ print("Welcome here")
 print("My first Post")
 print("============================================")
 
-username = "Badatcode360"
+username = input("Enter Username:")
+age =input("Enter Age:")
+category =input("Enter Content Category: ")
 bio = "I am bad at code"
 followers = 0
 
 print ("Username",username)
+print("Age:",age)
+print("Category",category)
 print ("Bio",bio)
 print ("Followers", followers)
 
