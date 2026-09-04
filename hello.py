@@ -4,7 +4,7 @@ print("My first Post")
 print("============================================")
 
 username = input("Enter Username:")
-age =input("Enter Age:")
+age =int(input("Enter Age:"))
 category =input("Enter Content Category: ")
 bio = "I am bad at code"
 followers = 0
@@ -23,3 +23,8 @@ print("Day 2",followers)
 
 followers -=10
 print ("Day 3",followers)
+
+print("\nInstagramprofile")
+print("===================")
+if age>40 and category == "fun":
+    print("You are old what is fun for you??")
