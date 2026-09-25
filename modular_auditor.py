@@ -11,7 +11,7 @@ def get_valid_input(user_input, total, error_count,tax_amount,current_total):
       raise ValueError
     if inventory > 500:
         print("Inventory count is too high. Please enter a value less than or equal to 500.\n")
-        return total, error_count, False
+        return total, error_count, False,0
     total += inventory
     print(f"-> Added {inventory}. Current total stock count: {total}\n")
     return total, error_count, True, inventory
