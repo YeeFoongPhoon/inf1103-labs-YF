@@ -1,0 +1,24 @@
+{
+    "transactions": [
+        {
+            "product_name": "Tennis Racket",
+            "number_of_items": 20,
+            "order_number": 1
+        },
+        {
+            "product_name": "100",
+            "number_of_items": 100,
+            "order_number": 2
+        },
+        {
+            "product_name": "100 plus drink",
+            "number_of_items": 20,
+            "order_number": 3
+        }
+    ],
+    "total": 140,
+    "error_count": 0,
+    "current_total": 1400,
+    "order_number": 4,
+    "tax_amount": 140.0
+}

@@ -1,32 +1,22 @@
 
 import json
-import os
-
 def load_inventory(filename="inventory.json"):
-    if not os.path.exists(filename):
-        return {"transactions": [], "total": 0, "error_count": 0, "current_total": 0, "order_number": 1}
-    try:
-        with open(filename, "r") as file:
-            data = json.load(file)
-            return {
+   
+   try:
+       with open(filename, "r") as file:
+           return json.load(file)
+       return {
                 "transactions": data.get("transactions", []),
                 "total": data.get("total", 0),
                 "error_count": data.get("error_count", 0),
                 "current_total": data.get("current_total", 0),
                 "order_number": data.get("order_number", 1)
             }
-    except json.JSONDecodeError:
-        print(f"Error: {filename} is not a valid JSON file. Starting with empty inventory.")
-        return {"transactions": [], "total": 0, "error_count": 0, "current_total": 0, "order_number": 1}
-
-def save_inventory_file(inventory, filename="inventory.json"):
-    """Saves the current inventory list to a JSON file."""
-    try:
-        with open(filename, "w") as file:
-            json.dump(inventory, file, indent=4)
-        print(f"-> Inventory successfully saved to {filename}!\n")
-    except Exception as e:
-        print(f"-> Error saving inventory: {e}\n")
+   except FileNotFoundError:
+       return {"transactions": [], "total": 0, "error_count": 0, "current_total": 0, "order_number": 1}
+   except json.JSONDecodeError:
+       print(f"Error: {filename} is not a valid JSON file. Starting with empty inventory.")
+       return {"transactions": [], "total": 0, "error_count": 0, "current_total": 0, "order_number": 1}
 
 
   

@@ -1,0 +1,17 @@
+=== Inventory & Delivery Management System Log ===
+
+=== Session Started ===
+
+=== Inventory & Delivery Management System Report ===
+
+--- Transaction History ---
+Product Name: Tennis Racket, Number of items: 20, Order Number: 1
+Product Name: 100, Number of items: 100, Order Number: 2
+Product Name: 100 plus drink, Number of items: 20, Order Number: 3
+
+=== Final Report ===
+Exiting... Total Deliveries Processed 140
+Number of Failed/Rejected Entries: 0
+Total Tax Amount: 140.00
+Final Total Amount: 1540.00
+==================================================
