@@ -1,0 +1,22 @@
+{
+    "products": [
+        {
+            "name": "Potato",
+            "price": 10.0,
+            "stock": 1,
+            "transactions": [
+                1
+            ]
+        },
+        {
+            "name": "Cheating Machine",
+            "price": 67.0,
+            "stock": 2,
+            "transactions": [
+                2
+            ]
+        }
+    ],
+    "total_tax": 14.4,
+    "total_cost": 158.4
+}
