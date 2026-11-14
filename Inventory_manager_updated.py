@@ -2,12 +2,29 @@ import json
 import os
 from abc import ABC, abstractmethod 
 
+class Supplier:
+    def __init__(self, supplier_id, name, contact_email):
+        self.supplier_id = supplier_id
+        self.name = name
+        self.contact_email = contact_email
+
+    def display_information(self):
+        print(f"Supplier ID: {self.supplier_id} | Name: {self.name} | Email: {self.contact_email}")
+
+    def to_dict(self):
+        return {
+            "supplier_id": self.supplier_id,
+            "name": self.name,
+            "contact_email": self.contact_email
+        }
+    
 class Product(ABC):
-    def __init__(self, product_id, name, price, stock, transactions=None):
+    def __init__(self, product_id, name, price, stock, supplier, transactions=None):
         self.product_id = product_id
         self.name = name
         self.price = price
         self.__stock = stock
+        self.supplier = supplier
         self.transactions = transactions if transactions is not None else [stock]
 
     @property
@@ -28,7 +45,8 @@ class Product(ABC):
         )
         print(
             f"ID: {self.product_id} | {self.name} | Unit Price: ${self.price:.2f} | "
-            f"Stock: {self.stock} | History: [{history_formatted}]",
+            f"Stock: {self.stock} | Supplier: {self.supplier.name} | "
+            f"History: [{history_formatted}]",
             end=""
         )
 
@@ -38,6 +56,7 @@ class Product(ABC):
             "name": self.name,
             "price": self.price,
             "stock": self.__stock,
+            "supplier": self.supplier.to_dict(),
             "transactions": self.transactions,
             "weight": getattr(self, 'weight', None),
             "download_size": getattr(self, 'download_size', None)
@@ -45,24 +64,27 @@ class Product(ABC):
 
 
 class PhysicalProduct(Product):
-    def __init__(self, product_id, name, price, stock, weight, transactions=None):
-        super().__init__(product_id, name, price, stock, transactions)
+    def __init__(self, product_id, name, price, stock, weight, supplier, transactions=None):
+        super().__init__(product_id, name, price, stock, supplier, transactions)
         self.weight = weight
 
     def display_information(self):
         super().display_information()
         print(f" | Type: Physical | Weight: {self.weight} kg")
+
     def to_dict(self):
         data = super().to_dict()
         data["type"] = "physical"
         data["weight"] = self.weight
         return data
+
     def get_fulfilment_info(self):
         return f"Physical shipping via courier (Weight: {self.weight} kg)"
 
+
 class DigitalProduct(Product):
-    def __init__(self, product_id, name, price, stock, download_size, transactions=None):
-        super().__init__(product_id, name, price, stock, transactions)
+    def __init__(self, product_id, name, price, stock, download_size, supplier, transactions=None):
+        super().__init__(product_id, name, price, stock, supplier, transactions)
         self.download_size = download_size
 
     def display_information(self):
@@ -74,6 +96,7 @@ class DigitalProduct(Product):
         data["type"] = "digital"
         data["download_size"] = self.download_size
         return data
+
     def get_fulfilment_info(self):
         return f"Digital download available (File Size: {self.download_size} MB)"
 
@@ -128,15 +151,22 @@ def load_inventory(filename="inventory.json"):
                     transactions = item.get("transactions", [item.get("stock", 0)])
                     price = item.get("price", 1.00)
 
+                    sup_data = item.get("supplier", {})
+                    supplier = Supplier(
+                        sup_data.get("supplier_id", "S000"),
+                        sup_data.get("name", "Default Supplier"),
+                        sup_data.get("contact_email", "support@supplier.com")
+                    )
+
                     product_type = item.get("type")
                     
                     if product_type == "digital" or "download_size" in item:
                         download_size = item.get("download_size", 0.0)
-                        product = DigitalProduct(pid, name, price, stock, download_size, transactions)
+                        product = DigitalProduct(pid, name, price, stock, download_size, supplier, transactions)
                     else:
                         # Fallback for older files or explicitly physical products
                         weight = item.get("weight", 0.0)  # Default weight if missing in old files
-                        product = PhysicalProduct(pid, name, price, stock, weight, transactions)
+                        product = PhysicalProduct(pid, name, price, stock, weight, supplier, transactions)
                         
                     inventory.add_product(product)
 
@@ -145,19 +175,6 @@ def load_inventory(filename="inventory.json"):
         except json.JSONDecodeError:
             print(f"Error: {filename} is not a valid JSON file. Starting with empty inventory.")
     return inventory
-
-def save_inventory(inventory, filename="inventory.json"):
-    try:
-        data = {
-            "products": [p.to_dict() for p in inventory.products],
-            "total_tax": inventory.total_tax,
-            "total_cost": inventory.total_cost
-        }
-        with open(filename, "w") as file:
-            json.dump(data, file, indent=4)
-        print(f"-> Inventory successfully saved to {filename}!\n")
-    except Exception as e:
-        print(f"-> Error saving inventory: {e}\n")
 
 def main():
     print("=== Inventory Management System ===")
@@ -188,13 +205,14 @@ def main():
                 p_type = input("Is this a physical or digital product? (p/d): ").strip().lower()
                 
                 product_id = f"P{len(inventory.products)+1:03d}"
+                default_supplier = Supplier("S001", "Global Tech Supplies", "sales@globaltech.com")
                 
                 if p_type == 'd':
                     download_size = float(input("Enter download size (MB): "))
-                    new_product = DigitalProduct(product_id, name, price, stock, download_size)
+                    new_product = DigitalProduct(product_id, name, price, stock, download_size, default_supplier)
                 else:
                     weight = float(input("Enter weight (kg): "))
-                    new_product = PhysicalProduct(product_id, name, price, stock, weight)
+                    new_product = PhysicalProduct(product_id, name, price, stock, weight, default_supplier)
                 
                 base_cost = stock * price
                 tax_amount = base_cost * 0.10
@@ -258,6 +276,3 @@ def main():
             break
         else:
             print("-> Invalid choice. Please enter a number between 1 and 6.\n")
-
-if __name__ == "__main__":
-    main()
