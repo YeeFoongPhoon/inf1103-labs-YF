@@ -7,7 +7,10 @@
             "stock": 1,
             "transactions": [
                 1
-            ]
+            ],
+            "weight": 0.0,
+            "download_size": null,
+            "type": "physical"
         },
         {
             "product_id": "P002",
@@ -16,9 +19,24 @@
             "stock": 2,
             "transactions": [
                 2
-            ]
+            ],
+            "weight": 0.0,
+            "download_size": null,
+            "type": "physical"
+        },
+        {
+            "product_id": "P003",
+            "name": "Data Centre Mark 2",
+            "price": 10000000000000.0,
+            "stock": 1,
+            "transactions": [
+                1
+            ],
+            "weight": 0.0,
+            "download_size": null,
+            "type": "physical"
         }
     ],
-    "total_tax": 14.4,
-    "total_cost": 158.4
+    "total_tax": 1000000000014.4,
+    "total_cost": 11000000000158.4
 }

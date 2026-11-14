@@ -1,0 +1,33 @@
+{
+    "products": [
+        {
+            "product_id": "P001",
+            "name": "Potato",
+            "price": 10.0,
+            "stock": 1,
+            "transactions": [
+                1
+            ]
+        },
+        {
+            "product_id": "P002",
+            "name": "Cheating Machine",
+            "price": 67.0,
+            "stock": 2,
+            "transactions": [
+                2
+            ]
+        },
+        {
+            "product_id": "P003",
+            "name": "Data Centre Mark 2",
+            "price": 10000000000000.0,
+            "stock": 1,
+            "transactions": [
+                1
+            ]
+        }
+    ],
+    "total_tax": 1000000000014.4,
+    "total_cost": 11000000000158.4
+}
