@@ -109,6 +109,19 @@ class Inventory:
     def add_product(self, product):
         self.products.append(product)
 
+    def remove_product(self, product_id):
+        product = self.find_product(product_id)
+        if product:
+            self.products.remove(product)
+            return product
+        return None
+
+    def find_product(self, product_id):
+        for product in self.products:
+            if product.product_id.lower() == product_id.lower():
+                return product
+        return None
+
     def search_product(self, name):
         for product in self.products:
             if product.name.lower() == name.lower():
@@ -119,12 +132,12 @@ class Inventory:
         if not self.products:
             print("-> The inventory is currently empty.\n")
             return
-            
+
         print("\n--- Current Inventory ---")
         for i, product in enumerate(self.products, 1):
             print(f"{i}. ", end="")
             product.display_information()
-        
+
         print("-" * 40)
         print(f"Total Tax Paid (All Purchases) : ${self.total_tax:,.2f}")
         print(f"Total Inventory Cost (Incl Tax) : ${self.total_cost:,.2f}")
