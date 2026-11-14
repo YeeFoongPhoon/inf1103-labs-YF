@@ -222,7 +222,10 @@ class Order:
                 line.display_line()
         print(f"Total Order Amount: ${self.calculate_total():.2f}\n")
 
-
+def show_product_details(product: Product) -> None:
+    product.display_information()
+    print(f"   Fulfilment: {product.get_fulfilment_info()}")
+    
 def load_inventory(filename: str = "inventory.json") -> Inventory:
     inventory = Inventory()
     if os.path.exists(filename):
@@ -289,18 +292,24 @@ def save_inventory(inventory: Inventory, filename: str = "inventory.json") -> No
 def main() -> None:
     print("=== Inventory Management System ===")
     inventory = load_inventory()
-    
+    orders: list[Order] = []
+    suppliers: dict[str, Supplier] = {
+        "S001": Supplier("S001", "Global Tech Supplies", "sales@globaltech.com")
+    }
+
     while True:
         print("\nMenu Options:")
         print("1. Display All Products & Financials")
         print("2. Add a Product and its type (Purchase)")
         print("3. Update Stock (Record Transaction)")
-        print("4. Search for a Product")
-        print("5. Save Inventory")
-        print("6. Exit")
-        
-        choice = input("\nEnter your choice (1-6): ").strip()
-        
+        print("4. Search & Inspect Product (Polymorphic Details)")
+        print("5. Remove Product from Inventory")
+        print("6. Create Customer Order")
+        print("7. Save Inventory")
+        print("8. Exit")
+
+        choice = input("\nEnter your choice (1-8): ").strip()
+
         if choice == '1':
             inventory.display_all()
         elif choice == '2':
@@ -310,57 +319,62 @@ def main() -> None:
                 price = float(input("Enter unit price: $"))
                 if stock < 0 or price < 0:
                     raise ValueError
-                
-                # Ask for product type
+
+                sup_id = input("Enter Supplier ID (e.g., S001): ").strip() or "S001"
+                if sup_id not in suppliers:
+                    sup_name = input("New Supplier Name: ").strip()
+                    sup_email = input("New Supplier Email: ").strip()
+                    suppliers[sup_id] = Supplier(sup_id, sup_name, sup_email)
+                supplier = suppliers[sup_id]
+
                 p_type = input("Is this a physical or digital product? (p/d): ").strip().lower()
-                
                 product_id = f"P{len(inventory.products)+1:03d}"
-                default_supplier = Supplier("S001", "Global Tech Supplies", "sales@globaltech.com")
-                
+
                 if p_type == 'd':
                     download_size = float(input("Enter download size (MB): "))
-                    new_product: Product = DigitalProduct(product_id, name, price, stock, download_size, default_supplier)
+                    new_product: Product = DigitalProduct(
+                        product_id, name, price, stock, download_size, supplier
+                    )
                 else:
                     weight = float(input("Enter weight (kg): "))
-                    new_product = PhysicalProduct(product_id, name, price, stock, weight, default_supplier)
-                
+                    new_product = PhysicalProduct(
+                        product_id, name, price, stock, weight, supplier
+                    )
+
                 base_cost = stock * price
                 tax_amount = base_cost * 0.10
                 total_purchase_cost = base_cost + tax_amount
 
                 inventory.total_tax += tax_amount
                 inventory.total_cost += total_purchase_cost
-                
+
                 inventory.add_product(new_product)
-                
                 print(f"-> '{name}' added successfully! (Cost: ${base_cost:.2f} + 10% Tax: ${tax_amount:.2f} = Total: ${total_purchase_cost:.2f})\n")
             except ValueError:
                 print("-> Invalid input! Please enter proper numbers for stock, price, and specs.\n")
         elif choice == '3':
             name = input("Enter the product name to update: ").strip()
             product = inventory.search_product(name)
-            
+
             if product:
                 try:
                     adj = int(input(f"Enter stock adjustment for {product.name} (e.g., 5 to add, -3 to remove): "))
-                    
                     if product.stock + adj < 0:
                         print("-> Error: Transaction would reduce stock below 0. Action canceled.\n")
                         continue
-                        
+
                     product.update_stock(adj)
-                    
                     if adj > 0:
                         base_cost = adj * product.price
                         tax_amount = base_cost * 0.10
                         total_purchase_cost = base_cost + tax_amount
-                        
+
                         inventory.total_tax += tax_amount
                         inventory.total_cost += total_purchase_cost
-                        
+
                         print(f"-> Purchase logged: {adj} units at ${product.price:.2f} each.")
                         print(f"   Tax Added: ${tax_amount:.2f} | Total Cost to Inventory: ${total_purchase_cost:.2f}")
-                    
+
                     change_str = f"+{adj}" if adj >= 0 else f"{adj}"
                     print(f"-> Transaction of {change_str} applied. New stock for '{product.name}' is {product.stock}.\n")
                 except ValueError:
@@ -371,21 +385,47 @@ def main() -> None:
             name = input("Enter the product name to search for: ").strip()
             product = inventory.search_product(name)
             if product:
-                print("-> Found: ", end="")
-                product.display_information()
+                print("-> Found: ")
+                show_product_details(product)
                 print()
             else:
                 print(f"-> Product '{name}' not found in inventory.\n")
         elif choice == '5':
-            save_inventory(inventory)
+            pid = input("Enter Product ID to remove (e.g., P001): ").strip()
+            removed = inventory.remove_product(pid)
+            if removed:
+                print(f"-> Removed '{removed.name}' from inventory (object still exists independently).\n")
+            else:
+                print(f"-> Product ID '{pid}' not found.\n")
         elif choice == '6':
+            order_id = f"ORD{len(orders)+1:03d}"
+            order = Order(order_id)
+            while True:
+                pid = input("Enter Product ID to add to order (or 'done'): ").strip()
+                if pid.lower() == 'done':
+                    break
+                product = inventory.find_product(pid)
+                if not product:
+                    print("-> Product ID not found.")
+                    continue
+                try:
+                    qty = int(input(f"Enter quantity for {product.name}: "))
+                    order.add_order_line(product, qty)
+                    print(f"-> Added {qty}x {product.name} to order.")
+                except ValueError as e:
+                    print(f"-> Error: {e}")
+            orders.append(order)
+            order.display_order()
+        elif choice == '7':
+            save_inventory(inventory)
+        elif choice == '8':
             save_prompt = input("Do you want to save before exiting? (y/n): ").strip().lower()
             if save_prompt == 'y':
                 save_inventory(inventory)
             print("Exiting program. Goodbye!")
             break
         else:
-            print("-> Invalid choice. Please enter a number between 1 and 6.\n")
+            print("-> Invalid choice. Please enter a number between 1 and 8.\n")
 
 
 if __name__ == "__main__":
