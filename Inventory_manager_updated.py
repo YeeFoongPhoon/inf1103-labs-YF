@@ -142,6 +142,54 @@ class Inventory:
         print(f"Total Tax Paid (All Purchases) : ${self.total_tax:,.2f}")
         print(f"Total Inventory Cost (Incl Tax) : ${self.total_cost:,.2f}")
         print("-" * 40 + "\n")
+class OrderLine:
+    def __init__(self, product, quantity):
+        self.product = product
+        self.quantity = quantity
+
+    def calculate_subtotal(self):
+        return self.product.price * self.quantity
+
+    def display_line(self):
+        print(
+            f"  - {self.product.name} (x{self.quantity}) @ ${self.product.price:.2f} "
+            f"= ${self.calculate_subtotal():.2f}"
+        )
+
+
+class Order:
+    def __init__(self, order_id):
+        self.order_id = order_id
+        self.order_lines = []
+
+    def add_order_line(self, product, quantity):
+        if quantity <= 0:
+            raise ValueError("Order quantity must be greater than zero.")
+        if product.stock < quantity:
+            raise ValueError(f"Insufficient stock for {product.name}.")
+        order_line = OrderLine(product, quantity)
+        self.order_lines.append(order_line)
+        product.update_stock(-quantity)
+
+    def remove_order_line(self, product_id):
+        for line in self.order_lines:
+            if line.product.product_id.lower() == product_id.lower():
+                line.product.update_stock(line.quantity)
+                self.order_lines.remove(line)
+                return True
+        return False
+
+    def calculate_total(self):
+        return sum(line.calculate_subtotal() for line in self.order_lines)
+
+    def display_order(self):
+        print(f"\n=== Order ID: {self.order_id} ===")
+        if not self.order_lines:
+            print("  (No items in this order)")
+        else:
+            for line in self.order_lines:
+                line.display_line()
+        print(f"Total Order Amount: ${self.calculate_total():.2f}\n")
 
 def load_inventory(filename="inventory.json"):
     inventory = Inventory()
