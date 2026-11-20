@@ -1,3 +1,4 @@
+import csv 
 import json
 import os
 from abc import ABC, abstractmethod
@@ -276,7 +277,71 @@ class Order:
 def show_product_details(product: Product) -> None:
     product.display_information()
     print(f"   Fulfilment: {product.get_fulfilment_info()}")
-    
+
+def get_positive_float(prompt: str) -> float:
+    while True:
+        try:
+            value = float(input(prompt))
+            if value <= 0:
+                print("Please enter a number greater than zero.")
+                continue
+            return value
+        except ValueError:
+            print("Please enter a valid number, e.g. 12.50")
+
+
+def get_non_negative_int(prompt: str) -> int:
+    while True:
+        try:
+            value = int(input(prompt))
+            if value < 0:
+                print("Please enter a whole number that is zero or greater.")
+                continue
+            return value
+        except ValueError:
+            print("Please enter a valid whole number, e.g. 10")
+
+
+def get_non_negative_float(prompt: str) -> float:
+    while True:
+        try:
+            value = float(input(prompt))
+            if value < 0:
+                print("Please enter a number that is zero or greater.")
+                continue
+            return value
+        except ValueError:
+            print("Please enter a valid number, e.g. 2.5")
+
+
+def load_products(path: str, inventory: Inventory, supplier: Supplier) -> None:
+    try:
+        file = open(path, newline="")
+    except FileNotFoundError:
+        print(f"Products file not found: {path}")
+    else:
+        with file:
+            reader = csv.reader(file)
+            next(reader, None)  # Skip header row
+            loaded = 0
+            for row_num, row in enumerate(reader, start=2):
+                if not row or len(row) < 5:
+                    continue
+                try:
+                    p_type = row[0].strip()
+                    pid = row[1].strip()
+                    name = row[2].strip()
+                    price = float(row[3].strip())
+                    stock_qty = int(row[4].strip())
+                    product = ProductFactory.create(p_type, pid, name, price, stock_qty, supplier)
+                    inventory.add_product(product)
+                    loaded += 1
+                except ValueError as e:
+                    print(f"Skipping invalid row {row_num} ({row}): {e}")
+            print(f"{loaded} products loaded.")
+    finally:
+        print("Load attempt finished.")
+           
 def load_inventory(filename: str = "inventory.json") -> Inventory:
     inventory = Inventory()
     if os.path.exists(filename):
@@ -335,9 +400,8 @@ def save_inventory(inventory: Inventory, filename: str = "inventory.json") -> No
         with open(filename, "w") as file:
             json.dump(data, file, indent=4)
         print(f"-> Inventory successfully saved to {filename}!\n")
-    except Exception as e:
+    except OSError as e:
         print(f"-> Error saving inventory: {e}\n")
-
 
 def main() -> None:
     print("=== Inventory Management System ===")
