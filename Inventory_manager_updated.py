@@ -418,52 +418,52 @@ def main() -> None:
         print("3. Update Stock (Record Transaction)")
         print("4. Search & Inspect Product (Polymorphic Details)")
         print("5. Remove Product from Inventory")
-        print("6. Create Customer Order")
-        print("7. Save Inventory")
-        print("8. Exit")
+        print("6. Create Customer Order (with Discount Strategy)")
+        print("7. Import Products from CSV")
+        print("8. Save Inventory")
+        print("9. Exit")
 
-        choice = input("\nEnter your choice (1-8): ").strip()
+        choice = input("\nEnter your choice (1-9): ").strip()
 
         if choice == '1':
             inventory.display_all()
         elif choice == '2':
             name = input("Enter the new product name: ").strip()
-            try:
-                stock = int(input("Enter stock count: "))
-                price = float(input("Enter unit price: $"))
-                if stock < 0 or price < 0:
-                    raise ValueError
+            stock = get_non_negative_int("Enter stock count: ")
+            price = get_positive_float("Enter unit price: $")
 
-                sup_id = input("Enter Supplier ID (e.g., S001): ").strip() or "S001"
-                if sup_id not in suppliers:
-                    sup_name = input("New Supplier Name: ").strip()
-                    sup_email = input("New Supplier Email: ").strip()
-                    suppliers[sup_id] = Supplier(sup_id, sup_name, sup_email)
-                supplier = suppliers[sup_id]
+            sup_id = input("Enter Supplier ID (e.g., S001): ").strip() or "S001"
+            if sup_id not in suppliers:
+                sup_name = input("New Supplier Name: ").strip()
+                sup_email = input("New Supplier Email: ").strip()
+                suppliers[sup_id] = Supplier(sup_id, sup_name, sup_email)
+            supplier = suppliers[sup_id]
 
-                p_type = input("Is this a physical or digital product? (p/d): ").strip().lower()
-                product_id = f"P{len(inventory.products)+1:03d}"
+            while True:
+                p_type = input("Is this a physical or digital product? (physical/digital): ").strip().lower()
+                if p_type in ("physical", "digital", "p", "d"):
+                    break
+                print("Please enter 'physical' or 'digital'.")
 
-                if p_type == 'd':
-                    spec = float(input("Enter download size (MB): "))
-                else:
-                    spec = float(input("Enter weight (kg): "))
+            product_id = f"P{len(inventory.products)+1:03d}"
+            if p_type in ("digital", "d"):
+                spec = get_non_negative_float("Enter download size (MB): ")
+            else:
+                spec = get_non_negative_float("Enter weight (kg): ")
 
-                new_product = ProductFactory.create(
-                    p_type, product_id, name, price, stock, supplier, spec
-                )
+            new_product = ProductFactory.create(
+                p_type, product_id, name, price, stock, supplier, spec
+            )
 
-                base_cost = stock * price
-                tax_amount = base_cost * 0.10
-                total_purchase_cost = base_cost + tax_amount
+            base_cost = stock * price
+            tax_amount = base_cost * 0.10
+            total_purchase_cost = base_cost + tax_amount
 
-                inventory.total_tax += tax_amount
-                inventory.total_cost += total_purchase_cost
+            inventory.total_tax += tax_amount
+            inventory.total_cost += total_purchase_cost
 
-                inventory.add_product(new_product)
-                print(f"-> '{name}' added successfully! (Cost: ${base_cost:.2f} + 10% Tax: ${tax_amount:.2f} = Total: ${total_purchase_cost:.2f})\n")
-            except ValueError:
-                print("-> Invalid input! Please enter proper numbers for stock, price, and specs.\n")
+            inventory.add_product(new_product)
+            print(f"-> '{name}' added successfully! (Cost: ${base_cost:.2f} + 10% Tax: ${tax_amount:.2f} = Total: ${total_purchase_cost:.2f})\n")
         elif choice == '3':
             name = input("Enter the product name to update: ").strip()
             product = inventory.search_product(name)
@@ -471,10 +471,6 @@ def main() -> None:
             if product:
                 try:
                     adj = int(input(f"Enter stock adjustment for {product.name} (e.g., 5 to add, -3 to remove): "))
-                    if product.stock + adj < 0:
-                        print("-> Error: Transaction would reduce stock below 0. Action canceled.\n")
-                        continue
-
                     product.update_stock(adj)
                     if adj > 0:
                         base_cost = adj * product.price
@@ -489,8 +485,8 @@ def main() -> None:
 
                     change_str = f"+{adj}" if adj >= 0 else f"{adj}"
                     print(f"-> Transaction of {change_str} applied. New stock for '{product.name}' is {product.stock}.\n")
-                except ValueError:
-                    print("-> Invalid input! Adjustment must be a valid integer.\n")
+                except ValueError as e:
+                    print(f"-> Invalid input or adjustment: {e}\n")
             else:
                 print(f"-> Product '{name}' not found in inventory.\n")
         elif choice == '4':
@@ -526,18 +522,35 @@ def main() -> None:
                     print(f"-> Added {qty}x {product.name} to order.")
                 except ValueError as e:
                     print(f"-> Error: {e}")
+
+            print("\nSelect Discount Strategy:")
+            print("1. No Discount")
+            print("2. 10% Percentage Discount")
+            print("3. Bulk Discount ($20 off orders >= $200)")
+            print("4. 5% Student Discount")
+            disc_choice = input("Enter choice (1-4): ").strip()
+            if disc_choice == '2':
+                order.set_discount(PercentageDiscount(10))
+            elif disc_choice == '3':
+                order.set_discount(BulkDiscount(200, 20))
+            elif disc_choice == '4':
+                order.set_discount(StudentDiscount(5))
+
             orders.append(order)
             order.display_order()
         elif choice == '7':
-            save_inventory(inventory)
+            csv_path = input("Enter CSV filename (default: products.csv): ").strip() or "products.csv"
+            load_products(csv_path, inventory, suppliers["S001"])
         elif choice == '8':
+            save_inventory(inventory)
+        elif choice == '9':
             save_prompt = input("Do you want to save before exiting? (y/n): ").strip().lower()
             if save_prompt == 'y':
                 save_inventory(inventory)
             print("Exiting program. Goodbye!")
             break
         else:
-            print("-> Invalid choice. Please enter a number between 1 and 8.\n")
+            print("-> Invalid choice. Please enter a number between 1 and 9.\n")
 
 
 if __name__ == "__main__":
