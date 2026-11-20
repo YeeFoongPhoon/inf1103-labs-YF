@@ -127,7 +127,46 @@ class DigitalProduct(Product):
 
     def get_fulfilment_info(self) -> str:
         return f"Digital download available (File Size: {self.download_size} MB)"
+class DiscountStrategy(ABC):
+    @abstractmethod
+    def apply(self, total: float) -> float:
+        pass
 
+
+class NoDiscount(DiscountStrategy):
+    def apply(self, total: float) -> float:
+        return total
+
+
+class PercentageDiscount(DiscountStrategy):
+    def __init__(self, percentage: float) -> None:
+        if percentage < 0 or percentage > 100:
+            raise ValueError("Discount percentage must be between 0 and 100.")
+        self.percentage: float = percentage
+
+    def apply(self, total: float) -> float:
+        return total * (1 - self.percentage / 100)
+
+
+class BulkDiscount(DiscountStrategy):
+    def __init__(self, threshold: float, amount: float) -> None:
+        if threshold < 0 or amount < 0:
+            raise ValueError("Threshold and discount amount cannot be negative.")
+        self.threshold: float = threshold
+        self.amount: float = amount
+
+    def apply(self, total: float) -> float:
+        if total >= self.threshold:
+            return max(0.0, total - self.amount)
+        return total
+
+
+class StudentDiscount(DiscountStrategy):
+    def __init__(self, percentage: float = 5.0) -> None:
+        self.percentage: float = percentage
+
+    def apply(self, total: float) -> float:
+        return total * (1 - self.percentage / 100)
 
 class Inventory:
     def __init__(self) -> None:
@@ -189,9 +228,13 @@ class OrderLine:
 
 
 class Order:
-    def __init__(self, order_id: str) -> None:
+    def __init__(self, order_id: str, discount: DiscountStrategy | None = None) -> None:
         self.order_id: str = order_id
         self.order_lines: list[OrderLine] = []
+        self.discount: DiscountStrategy = discount if discount is not None else NoDiscount()
+
+    def set_discount(self, discount: DiscountStrategy) -> None:
+        self.discount = discount
 
     def add_order_line(self, product: Product, quantity: int) -> None:
         if quantity <= 0:
@@ -211,7 +254,8 @@ class Order:
         return False
 
     def calculate_total(self) -> float:
-        return sum(line.calculate_subtotal() for line in self.order_lines)
+        total = sum(line.calculate_subtotal() for line in self.order_lines)
+        return self.discount.apply(total)
 
     def display_order(self) -> None:
         print(f"\n=== Order ID: {self.order_id} ===")
@@ -220,7 +264,10 @@ class Order:
         else:
             for line in self.order_lines:
                 line.display_line()
-        print(f"Total Order Amount: ${self.calculate_total():.2f}\n")
+        raw_total = sum(line.calculate_subtotal() for line in self.order_lines)
+        final_total = self.calculate_total()
+        print(f"Subtotal           : ${raw_total:.2f}")
+        print(f"Total After Discount: ${final_total:.2f}\n")
 
 def show_product_details(product: Product) -> None:
     product.display_information()
