@@ -30,6 +30,11 @@ class Product(ABC):
         supplier: Supplier,
         transactions: list[int] | None = None
     ) -> None:
+        if price <= 0:
+            raise ValueError("Product price must be greater than zero.")
+        if stock < 0:
+            raise ValueError("Product stock quantity cannot be negative.")
+
         self.product_id: str = product_id
         self.name: str = name
         self.price: float = price
@@ -42,37 +47,11 @@ class Product(ABC):
         return self.__stock
 
     def update_stock(self, quantity: int) -> None:
+        if self.__stock + quantity < 0:
+            raise ValueError("Product stock quantity cannot be negative.")
         self.__stock += quantity
         self.transactions.append(quantity)
-
-    @abstractmethod
-    def get_fulfilment_info(self) -> str:
-        pass
-
-    def display_information(self) -> None:
-        history_formatted = ", ".join(
-            f"+{t}" if t > 0 else str(t) for t in self.transactions
-        )
-        print(
-            f"ID: {self.product_id} | {self.name} | Unit Price: ${self.price:.2f} | "
-            f"Stock: {self.stock} | Supplier: {self.supplier.name} | "
-            f"History: [{history_formatted}]",
-            end=""
-        )
-
-    def to_dict(self) -> dict:
-        return {
-            "product_id": self.product_id,
-            "name": self.name,
-            "price": self.price,
-            "stock": self.__stock,
-            "supplier": self.supplier.to_dict(),
-            "transactions": self.transactions,
-            "weight": getattr(self, 'weight', None),
-            "download_size": getattr(self, 'download_size', None)
-        }
-
-
+        
 class PhysicalProduct(Product):
     def __init__(
         self,
@@ -239,6 +218,8 @@ class Inventory:
 
 class OrderLine:
     def __init__(self, product: Product, quantity: int) -> None:
+        if quantity <= 0:
+            raise ValueError("Quantity must be greater than zero.")
         self.product: Product = product
         self.quantity: int = quantity
 
@@ -262,11 +243,9 @@ class Order:
         self.discount = discount
 
     def add_order_line(self, product: Product, quantity: int) -> None:
-        if quantity <= 0:
-            raise ValueError("Order quantity must be greater than zero.")
+        order_line = OrderLine(product, quantity)
         if product.stock < quantity:
             raise ValueError(f"Insufficient stock for {product.name}.")
-        order_line = OrderLine(product, quantity)
         self.order_lines.append(order_line)
         product.update_stock(-quantity)
 
