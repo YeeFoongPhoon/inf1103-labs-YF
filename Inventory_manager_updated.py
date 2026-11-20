@@ -127,6 +127,31 @@ class DigitalProduct(Product):
 
     def get_fulfilment_info(self) -> str:
         return f"Digital download available (File Size: {self.download_size} MB)"
+    
+class ProductFactory:
+    @staticmethod
+    def create(
+        product_type: str,
+        product_id: str,
+        name: str,
+        price: float,
+        stock_quantity: int,
+        supplier: Supplier,
+        spec_value: float = 0.0,
+        transactions: list[int] | None = None
+    ) -> Product:
+        normalized_type = product_type.strip().lower()
+        if normalized_type in ("physical", "p"):
+            return PhysicalProduct(
+                product_id, name, price, stock_quantity, spec_value, supplier, transactions
+            )
+        elif normalized_type in ("digital", "d"):
+            return DigitalProduct(
+                product_id, name, price, stock_quantity, spec_value, supplier, transactions
+            )
+        else:
+            raise ValueError(f"Unknown product type: {product_type}")
+        
 class DiscountStrategy(ABC):
     @abstractmethod
     def apply(self, total: float) -> float:
@@ -302,17 +327,16 @@ def load_inventory(filename: str = "inventory.json") -> Inventory:
                     )
 
                     product_type = item.get("type")
-                    if product_type == "digital" or "download_size" in item:
-                        download_size = item.get("download_size", 0.0)
-                        product: Product = DigitalProduct(
-                            pid, name, price, stock, download_size, supplier, transactions
-                        )
+                    if product_type == "digital" or item.get("download_size") is not None:
+                        spec = item.get("download_size", 0.0)
+                        p_type = "digital"
                     else:
-                        weight = item.get("weight", 0.0)
-                        product = PhysicalProduct(
-                            pid, name, price, stock, weight, supplier, transactions
-                        )
+                        spec = item.get("weight", 0.0)
+                        p_type = "physical"
 
+                    product = ProductFactory.create(
+                        p_type, pid, name, price, stock, supplier, spec, transactions
+                    )
                     inventory.add_product(product)
 
             print(f"Successfully loaded data from {filename}.")
@@ -378,15 +402,13 @@ def main() -> None:
                 product_id = f"P{len(inventory.products)+1:03d}"
 
                 if p_type == 'd':
-                    download_size = float(input("Enter download size (MB): "))
-                    new_product: Product = DigitalProduct(
-                        product_id, name, price, stock, download_size, supplier
-                    )
+                    spec = float(input("Enter download size (MB): "))
                 else:
-                    weight = float(input("Enter weight (kg): "))
-                    new_product = PhysicalProduct(
-                        product_id, name, price, stock, weight, supplier
-                    )
+                    spec = float(input("Enter weight (kg): "))
+
+                new_product = ProductFactory.create(
+                    p_type, product_id, name, price, stock, supplier, spec
+                )
 
                 base_cost = stock * price
                 tax_amount = base_cost * 0.10
